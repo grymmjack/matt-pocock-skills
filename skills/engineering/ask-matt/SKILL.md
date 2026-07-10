@@ -68,7 +68,8 @@ Off the main flow entirely.
 - **`/grill-me`** — the same relentless interview as `/grill-with-docs`, but for when you have **no codebase**. Stateless: it saves nothing locally, builds no `CONTEXT.md`. Reach for it to sharpen any plan or design that doesn't live in a repo.
 - **`/prototype`** — a small, throwaway program that answers one design question: does this state model feel right, or what should this UI look like. Throwaway from day one — keep the answer, delete the code. It's the detour in step 2 of the main flow, but reach for it any time a design question is hard to settle on paper.
 - **`/research`** — delegate reading legwork to a **background agent**: it investigates a question against **primary sources**, then leaves a cited Markdown file in the repo. Keep working while it reads. The file it produces is something to take *into* the main flow at `/grill-with-docs` — research feeds the thinking, it doesn't replace it.
-- **`/teach`** — learn a concept over multiple sessions, using the current directory as a stateful workspace.
+- **`/teach`** — learn a concept over multiple sessions, using the current directory as a stateful workspace. Here the agent is the **teacher**: it devises the lessons and drives you forward.
+- **`/learn-anything`** — the same stateful, multi-session workspace, but **you** drive: it runs your own "Learn Anything" framework (the 5 Ws → resources → critical observations → the practice lab → mastery) and tracks each topic on the **continuum of learning**. Its fork is depth — a topic you're committed to climbs to mastery; one you're merely curious about gets a depth verdict and gets parked. Reach for `/teach` when you want to be taught; `/learn-anything` when you want to learn your way.
 - **`/writing-great-skills`** — reference for writing and editing skills well.
 
 ## Precondition
