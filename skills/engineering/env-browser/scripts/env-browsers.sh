@@ -56,7 +56,7 @@ _pkgbrowse_ensure_open() {
 mode="$1"; shift
 name=$(printf '%s' "$*" | sed 's/\x1b\[[0-9;]*m//g' | awk '{print $1}')
 [ -z "$name" ] && exit 0
-url=$($PKGBROWSE_BACKEND url "$mode" "$name" 2>/dev/null)
+url=$(bash "$PKGBROWSE_BACKEND" url "$mode" "$name" 2>/dev/null)
 [ -z "$url" ] && exit 0
 if [ "$(uname)" = "Darwin" ]; then opener=open; else opener=xdg-open; fi
 nohup "$opener" "$url" >/dev/null 2>&1 &
@@ -68,7 +68,7 @@ HELPER
 # "<display-path>\t<absolute-path>"; the list shows only the short field.
 _pkgbrowse_files() {
   local label="$1" pkg="$2"
-  local files; files=$($PKGBROWSE_BACKEND files "$pkg")
+  local files; files=$(bash "$PKGBROWSE_BACKEND" files "$pkg")
   if [ -z "$files" ]; then
     echo "No source files found for $pkg."
     sleep 1.2
@@ -96,16 +96,16 @@ _pkgbrowse_engine() {
   _pkgbrowse_ensure_open
   while true; do
     local sel
-    sel=$($BK list | fzf \
+    sel=$(bash "$BK" list | fzf \
       --style full --ansi --reverse --border --padding 1,2 \
       --border-label="$border" \
       --list-label="$listlabel" \
       --preview-label='package info' \
-      --preview "pkg=\$(printf '%s' {} | sed 's/\x1b\[[0-9;]*m//g' | awk '{print \$1}'); $BK show \"\$pkg\"" \
+      --preview "pkg=\$(printf '%s' {} | sed 's/\x1b\[[0-9;]*m//g' | awk '{print \$1}'); bash "$BK" show \"\$pkg\"" \
       --preview-window='right,55%' \
       --bind "alt-w:execute-silent(/tmp/pkgbrowse-open.sh registry {})" \
       --bind "alt-d:execute-silent(/tmp/pkgbrowse-open.sh docs {})" \
-      --bind "alt-h:execute(pkg=\$(printf '%s' {} | sed 's/\x1b\[[0-9;]*m//g' | awk '{print \$1}'); $BK help \"\$pkg\" | \${PAGER:-less -R})" \
+      --bind "alt-h:execute(pkg=\$(printf '%s' {} | sed 's/\x1b\[[0-9;]*m//g' | awk '{print \$1}'); bash "$BK" help \"\$pkg\" | \${PAGER:-less -R})" \
       --bind 'focus:transform-header:
         line=$(printf "%s" {} | sed "s/\x1b\[[0-9;]*m//g");
         pkg=$(echo "$line" | awk "{print \$1}");
@@ -136,7 +136,7 @@ nodebrowse() {
   [ -d "$root" ] || { echo "nodebrowse: no node_modules found (looked at: $root)"; return 1; }
   _node_ensure_backend
   export NODEBROWSE_ROOT="$root"
-  export PKGBROWSE_BACKEND="bash /tmp/nodebrowse-backend.sh"
+  export PKGBROWSE_BACKEND="/tmp/nodebrowse-backend.sh"
   local scope="global"; [ "$root" = "$PWD/node_modules" ] && scope="./node_modules"
   _pkgbrowse_engine "📦 node — $scope" "npm packages" "npm" "homepage"
 }
@@ -151,7 +151,7 @@ rustbrowse() {
   fi
   _rust_ensure_backend
   export RUSTBROWSE_META=/tmp/rustbrowse-meta.json
-  export PKGBROWSE_BACKEND="bash /tmp/rustbrowse-backend.sh"
+  export PKGBROWSE_BACKEND="/tmp/rustbrowse-backend.sh"
   _pkgbrowse_engine "🦀 rust — $(basename "$PWD")" "crates" "crates.io" "docs.rs"
 }
 
@@ -166,7 +166,7 @@ gobrowse() {
   fi
   _go_ensure_backend
   export GOBROWSE_META=/tmp/gobrowse-meta.json
-  export PKGBROWSE_BACKEND="bash /tmp/gobrowse-backend.sh"
+  export PKGBROWSE_BACKEND="/tmp/gobrowse-backend.sh"
   _pkgbrowse_engine "🐹 go — $(basename "$PWD")" "modules" "pkg.go.dev" "pkg.go.dev"
 }
 
@@ -174,7 +174,7 @@ gembrowse() {
   command -v fzf >/dev/null 2>&1 || { echo "gembrowse: fzf is required"; return 1; }
   command -v gem >/dev/null 2>&1 || { echo "gembrowse: gem is required"; return 1; }
   _gem_ensure_backend
-  export PKGBROWSE_BACKEND="bash /tmp/gembrowse-backend.sh"
+  export PKGBROWSE_BACKEND="/tmp/gembrowse-backend.sh"
   _pkgbrowse_engine "💎 ruby gems" "installed gems" "rubygems" "docs"
 }
 
