@@ -24,7 +24,7 @@ Reach for it when you've landed in an unfamiliar codebase and want to know what 
 
 ## Prerequisites
 
-`fzf` on `PATH`, plus the toolchain for whichever browser you use (`python3`, `npm`, `cargo`, `go`, `gem`); the node and go browsers also use `jq`. `bat` (Debian's `batcat` also works) gives the source-file preview syntax highlighting; without it the preview falls back to `cat`. Install by sourcing the files in `scripts/` from your shell rc once — they define the `*browse` functions in bash or zsh.
+`fzf` on `PATH`, plus the toolchain for whichever browser you use (`python3`, `npm`, `cargo`, `go`, `gem`); the node and go browsers also use `jq`. `bat` (Debian's `batcat` also works) gives the source-file preview syntax highlighting; without it the preview falls back to `cat`. `universal-ctags` powers the Ctrl-O symbol outline; without it Ctrl-O just prints an install hint. Install by sourcing the files in `scripts/` from your shell rc once — they define the `*browse` functions in bash or zsh.
 
 ## One shape, five ecosystems
 
@@ -32,11 +32,14 @@ Every browser is the same **drill**, not a flat list. Level one is the package l
 
 The action keys are `Alt-W` (registry), `Alt-D` (docs/homepage), `Alt-H` (help — `pydoc`, README, `go doc`, or crate docs). They are Alt-chords on purpose — a bare `w` or `d` would be eaten by fzf's type-to-filter box, and filtering the list is the whole point. Under the hood the four non-Python browsers share a single engine and differ only in a small backend exposing `list`/`show`/`files`/`url`/`help`, so the family stays consistent and a sixth ecosystem is a short addition. This is the same fuzzy-browser shape as `brewbrowse` and `aptbrowse`, aimed at language package managers instead of the system one.
 
+In the source view a third level is a keystroke away: **Ctrl-O** opens the file's **symbol outline** — classes, functions, methods, and variables extracted by `universal-ctags`, uniformly across all five languages. It's the outline a language server would draw, but navigable: fuzzy-filter the symbols, watch the source preview highlight each one, and jump `$EDITOR` to the line on Enter. No LSP, no per-language work — one tool covers Python, JS/TS, Rust, Go, and Ruby.
+
 ## It's working if
 
 - Typing filters the list by description as well as name, and the preview names each package's purpose, docs, and required-by.
 - `Enter` opens the package's real source files — not a docs stub — with syntax highlighting, showing short package-relative paths.
 - `Alt-W`/`Alt-D` open the right pages in your browser; `Alt-H` pages real help text.
+- `Ctrl-O` in the source view lists the file's symbols and jumps `$EDITOR` to the one you pick (with `universal-ctags` installed).
 - `rustbrowse`/`gobrowse` reflect the project in `$PWD`, while `pybrowse`/`nodebrowse` follow the active venv / `node_modules` (or global with a flag).
 
 ## Where it fits
