@@ -41,6 +41,7 @@
 - **Official and primary first.** Official site, repo, and docs outrank blogs and tutorials. Man pages and `--help` win on _this machine's_ behaviour when sources disagree.
 - **File by type.** The taxonomy above mirrors the map. Drop any heading with no entry — don't pad. Add a type the map doesn't list if the topic needs it.
 - **Annotate every entry.** A bare link is useless in three months. One line: what it covers, when to reach for it.
+- **Verify every link before it goes in.** Fetch each URL and confirm it resolves to the intended content — a candidate from memory or a search result is not a fact. A `200` that redirects a real path down to the site root is a **dead link**, not a live one; check the final URL, not just the status. Run `bash verify-urls.sh` after editing links; a URL you can't verify goes under `## Gaps`, not into the list. (See SKILL.md → _Never trust parametric knowledge_.)
 - **The Nerdery Lab is a resource.** Rick's VS Code extensions + a ready-to-run workspace are how he gets instant hands-on gratification. Capture the exact extensions and the workspace file so setup is one step next time.
 - **Surface gaps.** If no good source exists for an area the topic needs, add a `## Gaps` section listing what's missing. It drives the next search.
 - **Prune ruthlessly.** Five sharp sources beat thirty mediocre ones. Remove what turned out wrong or shallow.

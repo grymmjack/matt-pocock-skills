@@ -32,6 +32,15 @@ Treat the current directory as a learning workspace, **one folder per topic** (m
 
 Before you teach Rick anything or write it into the workspace, ground it in a trusted resource. Your parametric memory is a starting point for _what to go find_, never the source of truth. This matters more the deeper the topic gets: man pages beat blogs, primary docs beat tutorials, and a claim without a citation is a claim to go verify. Populating `RESOURCES.md` well is the precondition for everything downstream.
 
+### Verify every URL before you write it (hard rule)
+
+A URL from your memory, a search-result snippet, or a doc-search tool is a _candidate_, not a fact. **Never write a link into any workspace file (`RESOURCES.md`, `TOPIC.md`, `OBSERVATIONS.md`, deep dives, `index.html`, learning records) until you have actually fetched it and confirmed it resolves to the intended content.** Guessing a doc's URL path from a pattern is the most common way to ship a dead link — don't.
+
+- **A 200 is not enough.** Many sites `301` a moved or missing page to their home page, which then returns 200. A link that redirects a real path down to the site root (`/`) is a **dead link wearing a live badge** — treat it as broken. (This exact trap shipped a "Scripts deprecation" link that silently bounced to the changelog home.)
+- **Check the final, redirected URL**, not just the status code. A redirect that keeps the meaningful path (adds `?extension=rust`, upgrades `http`→`https`, canonicalizes a host) is fine; one that drops the path is not.
+- **Use the tool, don't eyeball it.** The skill ships **`verify-urls.sh`** (in `./assets/`, copied to the workspace root next to `build-docs.sh`). It extracts every URL from the workspace's `.md` and hand-authored `.html`, fetches each, and flags both hard failures (4xx/5xx/timeouts) and the silent redirect-to-root case. **Run `bash verify-urls.sh` after adding or editing any links and before considering the docs done** (it exits non-zero if anything is dead, so it can gate a commit).
+- **A URL you cannot verify does not go in.** If a source is unreachable, either find a working equivalent or list the gap under `RESOURCES.md`'s `## Gaps` — never leave an unchecked link in the workspace.
+
 ## The framework
 
 Seven parts. Rick moves between them freely, but each has a home in the workspace and a job to do.
@@ -130,6 +139,8 @@ Deep dives are for _fluency in the moment_; the compressed **reference cards** i
 
 The Markdown docs (`TOPIC.md`, `RESOURCES.md`, `OBSERVATIONS.md`, `GLOSSARY.md`, `NOTES.md`, `learning-records/*.md`) are the editable source of truth, but raw Markdown in a browser is jarring — so render a **styled `.html` twin** of each with `build-docs.sh` (pandoc + `lesson.css`). The `.md` stays the source you and Rick edit; **re-run `bash build-docs.sh` after editing any `.md`** so the HTML never drifts. Record this in `NOTES.md`. Never hand-edit the generated `.html`.
 
+Whenever you add or change links, **run `bash verify-urls.sh` before calling the docs done** — it fetches every URL in the workspace and fails on dead links or silent redirect-to-root (see [Never trust parametric knowledge](#never-trust-parametric-knowledge)). Copy it to the workspace root at scaffold time alongside `build-docs.sh`.
+
 Maintain an **`index.html` at the workspace root — the course home**. It indexes every deep dive, reference card, probe, and doc, and — the learn-anything-specific part — **shows where the topic sits on the continuum**: the current rung, the target rung, and the trail of transitions. It's Rick's way back in if a tab or session is lost. Keep it current; open it for him when he wants the overview.
 
 Long rendered pages (the glossary especially) get a left sidebar outline + live filter via `doc.js`, wired in automatically by `build-docs.sh`.
@@ -144,6 +155,7 @@ Deep dives and reference cards are built from reusable **components** in `./asse
 - `quiz.js` — the retrieval-practice quiz widget (immediate feedback, running score).
 - `doc.js` — sidebar outline + client-side search for long rendered pages.
 - `build-docs.sh` — renders the Markdown docs to styled HTML (belongs at the **workspace root**, not `assets/`).
+- `verify-urls.sh` — checks every linked URL in the workspace actually resolves, flagging dead links and silent redirect-to-root (belongs at the **workspace root**, next to `build-docs.sh`). See [Never trust parametric knowledge](#never-trust-parametric-knowledge).
 
 ## `NOTES.md`
 
