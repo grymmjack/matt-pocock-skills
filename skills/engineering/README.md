@@ -14,6 +14,7 @@ Reachable only when you type them (`disable-model-invocation: true`).
 - **[to-spec](./to-spec/SKILL.md)** — Turn the current conversation into a spec and publish it to the issue tracker.
 - **[to-tickets](./to-tickets/SKILL.md)** — Break any plan, spec, or conversation into a set of tracer-bullet tickets, each declaring its blocking edges — text in a local file, or native blocking links on a real tracker.
 - **[wayfinder](./wayfinder/SKILL.md)** — Plan a huge chunk of work — more than one agent session can hold — as a shared map of investigation tickets on the issue tracker, resolved one at a time until the way to the destination is clear.
+- **[python-env](./python-env/SKILL.md)** — Explore a Python environment the fuzzy way: browse installed packages, read their source, and jump to their PyPI/docs, with an fzf browser (`pybrowse`).
 
 ## Model-invoked
 
