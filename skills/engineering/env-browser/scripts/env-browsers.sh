@@ -66,6 +66,54 @@ HELPER
 
 # Level 2: browse one package's source files with a bat preview. Rows are
 # "<display-path>\t<absolute-path>"; the list shows only the short field.
+_pkgbrowse_ensure_outline() {
+  cat >/tmp/pkgbrowse-outline.sh <<'OUTLINE'
+#!/usr/bin/env bash
+# pkgbrowse outline — a navigable symbol picker for one source file.
+# Extracts classes/functions/methods/vars via universal-ctags, lists them in
+# fzf (sorted top-to-bottom by line), previews the source highlighted at the
+# selected symbol, and jumps $EDITOR to its line on ENTER. Launched from the
+# level-2 file browser via ctrl-o. Arg: <file>.
+file="$1"
+[ -f "$file" ] || exit 0
+if ! command -v ctags >/dev/null 2>&1; then
+  printf 'Outline needs universal-ctags.\n  macOS:  brew install universal-ctags\n  Debian: sudo apt install universal-ctags\n'
+  sleep 2.2; exit 0
+fi
+# Rows: "<line>\t<kind>  <name>" (kind dim, name yellow), ordered by line.
+rows=$(ctags -x "$file" 2>/dev/null \
+  | awk '{printf "%s\t\033[2m%-11s\033[0m \033[1;33m%s\033[0m\n", $3, $2, $1}' \
+  | sort -n -k1,1)
+if [ -z "$rows" ]; then
+  echo "No symbols found in $(basename "$file")."; sleep 1.4; exit 0
+fi
+
+export PKGBROWSE_OUTLINE_FILE="$file"
+if command -v bat >/dev/null 2>&1; then bcmd=bat
+elif command -v batcat >/dev/null 2>&1; then bcmd=batcat
+else bcmd=""; fi
+if [ -n "$bcmd" ]; then
+  prev="$bcmd --color=always --style=numbers --highlight-line {1} --paging=never \"\$PKGBROWSE_OUTLINE_FILE\""
+  pwin="right,72%,+{1}-6"
+else
+  prev='awk -v L={1} "NR>=L-8 \&\& NR<=L+40 {printf \"%s%4d  %s\n\", (NR==L?\">\":\" \"), NR, \$0}" "$PKGBROWSE_OUTLINE_FILE"'
+  pwin="right,72%"
+fi
+
+printf '%s\n' "$rows" | fzf \
+  --style full --ansi --reverse --border --padding 1,2 \
+  --delimiter='\t' --with-nth=2 \
+  --border-label="🔎 $(basename "$file") — outline" \
+  --list-label='symbols' \
+  --preview-label='source' \
+  --preview "$prev" \
+  --preview-window="$pwin" \
+  --bind "enter:execute(\${EDITOR:-vim} +{1} \"\$PKGBROWSE_OUTLINE_FILE\")" \
+  --footer='ENTER edit at line · ESC back to files'
+OUTLINE
+  chmod +x /tmp/pkgbrowse-outline.sh
+}
+
 _pkgbrowse_files() {
   local label="$1" pkg="$2"
   local files; files=$(bash "$PKGBROWSE_BACKEND" files "$pkg")
@@ -75,6 +123,7 @@ _pkgbrowse_files() {
     return
   fi
   local batcmd; batcmd=$(_pkgbrowse_batcmd)
+  _pkgbrowse_ensure_outline
   echo "$files" | fzf \
     --style full --ansi --reverse --border --padding 1,2 \
     --delimiter='\t' --with-nth=1 \
@@ -85,7 +134,8 @@ _pkgbrowse_files() {
     --preview-window='right,70%' \
     --bind "enter:execute(\${EDITOR:-vim} {2})" \
     --bind 'focus:transform-header:echo {2}' \
-    --footer='ENTER edit in $EDITOR, ESC back to packages'
+    --bind 'ctrl-o:execute(bash /tmp/pkgbrowse-outline.sh {2})' \
+    --footer='ENTER edit · Ctrl-O outline · ESC back'
 }
 
 # Level 1: the package list. Reads $PKGBROWSE_BACKEND (exported by the caller).

@@ -26,7 +26,7 @@ The tools live in [`scripts/`](./scripts/) — `pybrowse.sh` (Python) and `env-b
 for f in "$PWD"/scripts/*.sh; do echo "source $f" >> ~/.zshrc; done   # or ~/.bashrc
 ```
 
-Requires `fzf` (+ `jq` for the node/go browsers) and the relevant toolchain. `bat` (or Debian's `batcat`) gives the source-file preview syntax highlighting; without it, the preview falls back to `cat`.
+Requires `fzf` (+ `jq` for the node/go browsers) and the relevant toolchain. `bat` (or Debian's `batcat`) gives the source-file preview syntax highlighting; without it, the preview falls back to `cat`. `universal-ctags` powers the Ctrl-O symbol outline (`brew install universal-ctags` / `apt install universal-ctags`); without it, Ctrl-O just prints an install hint.
 
 ## Run it
 
@@ -42,16 +42,19 @@ gembrowse                # installed gems
 
 **Level 2 — source.** Press **Enter** on a package to drill into its own source files with a `bat` preview — read exactly what a dependency is made of. Rows show the package-relative path (`macholib/dyld.py`), not the full absolute path. **Enter** on a file opens it in `$EDITOR`; **Esc** pops back to the package list; **Esc** on the list quits.
 
+**Level 3 — outline.** In the source view, **Ctrl-O** opens a navigable symbol outline of the selected file (classes, functions, methods, variables — via [universal-ctags](https://github.com/universal-ctags/ctags), across all five languages). Fuzzy-filter the symbols, the preview shows the source highlighted at each one, and **Enter** jumps `$EDITOR` straight to that line. It's the "outline pane" a language server would give you, but navigable — and it degrades to a hint if `ctags` isn't installed.
+
 ### Keys
 
 Keys are **Alt-chords**, not bare `w`/`d`/`h` — a plain letter would be swallowed by fzf's type-to-filter box, and filtering is the point of the list.
 
 | Key | Action |
 |-----|--------|
-| `Enter` | Drill into the package's source files |
+| `Enter` | Drill into the package's source files (list); open the file in `$EDITOR` (source) |
 | `Alt-W` | Open the package's registry page (PyPI / npm / crates.io / pkg.go.dev / rubygems) |
 | `Alt-D` | Open its documentation / homepage (from the package metadata) |
 | `Alt-H` | Help — `pydoc` / README / `go doc` / crate docs — paged through `$PAGER`/`less` |
+| `Ctrl-O` | In the source view: open the file's symbol outline (class/func/method/var → jump to line) |
 | `Esc` | Back one level / quit |
 
 ## Adding an ecosystem
