@@ -1,6 +1,6 @@
 ---
 name: xmind-mindmap
-description: "Turn any topic into a real .xmind mind map — build a hierarchical topic tree and generate a genuine XMind file (single- or multi-sheet, hyperlinked, themed), with optional SVG/PNG/PDF renders. Use when the user wants a mind map, an .xmind file, to visualise/map/diagram a subject, or to render a teach / learn-anything topic as a mind map."
+description: "Turn any topic into a real .xmind mind map — build a hierarchical topic tree and generate a genuine XMind file (single- or multi-sheet, hyperlinked, themed, with optional per-node screenshots/images, clickable links, and styling), plus optional SVG/PNG/PDF or interactive-HTML (markmap) renders. Use when the user wants a mind map, an .xmind file, to visualise/map/diagram a subject, to embed screenshots in a map, or to render a teach / learn-anything topic as a mind map."
 argument-hint: "What topic should the mind map cover?"
 ---
 
@@ -52,7 +52,14 @@ image renders do.
    ```bash
    ./scripts/render.sh <name>.mmd all       # → .svg, .png, .pdf
    ./scripts/render.sh <name>.mmd png        # just one format
+   ./scripts/render.sh <name>.mmd html       # interactive markmap (best for big maps)
    ```
+   Mermaid's radial `mindmap` layout gets unreadable past ~50 nodes. For a large
+   tree, prefer **`html`** — it builds a collapsible, pan/zoom, clickable
+   [markmap](https://markmap.js.org/) from the `.md` outline (keeps the tree's
+   `url`s as anchors, starts collapsed to the branch level). The SVG render is
+   also made clickable automatically when the source `<base>.tree.json` sits
+   beside the `.mmd` (or via `TREE_JSON=<path>`).
 5. **Hand back the files** and, if you can, open the `.xmind` for the user.
 
 ## Generator options

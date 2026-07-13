@@ -184,4 +184,4 @@ General workflow tools, not code-specific.
 **Model-invoked**
 
 - **[grilling](./skills/productivity/grilling/SKILL.md)** — Interview the user relentlessly about a plan or design until every branch of the decision tree is resolved. The reusable loop behind `grill-me` and `grill-with-docs`.
-- **[xmind-mindmap](./skills/productivity/xmind-mindmap/SKILL.md)** — Turn any topic into a real `.xmind` mind map (single- or multi-sheet, hyperlinked, themed) from a hierarchical topic tree, with optional SVG/PNG/PDF renders.
+- **[xmind-mindmap](./skills/productivity/xmind-mindmap/SKILL.md)** — Turn any topic into a real `.xmind` mind map (single- or multi-sheet, hyperlinked, themed, with optional per-node screenshots, clickable links, and styling) from a hierarchical topic tree, with optional SVG/PNG/PDF or interactive-HTML renders.

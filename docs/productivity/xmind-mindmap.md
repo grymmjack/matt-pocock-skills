@@ -34,12 +34,27 @@ it from asking for a diagram.
 ## Prerequisites
 
 The generator needs its one npm dependency installed once inside the skill's own
-folder (`npm install` there); `node_modules` is gitignored. Image rendering pulls
-Mermaid CLI on demand via `npx` and drives a headless Chromium — `render.sh`
-auto-detects a pre-installed browser so nothing extra downloads. The `.xmind`
+folder (`npm install` there); `node_modules` is gitignored. Static image renders
+(`svg`/`png`/`pdf`) pull Mermaid CLI on demand via `npx` and drive a headless
+Chromium — `render.sh` auto-detects a pre-installed browser so nothing extra
+downloads; the interactive `html` render pulls markmap the same way. The `.xmind`
 output itself needs no browser. The skill writes wherever you point `--out`
 (default: the current directory); pointed at a `teach` / `learn-anything`
 workspace's `./reference/`, its output sits alongside the other cards.
+
+## Rich nodes: screenshots, links, styling
+
+A node is not limited to a label. Any node can carry an `image` (a local file
+path, resolved relative to the tree) that is **embedded into the `.xmind`** — the
+picture travels inside the file, so a node can show the actual screenshot of the
+page it maps, not just name it. It can carry a `url` (the node becomes a clickable
+link in both the `.xmind` and the Markdown twin), and styling flags — `cli` (a
+terminal look for shell commands), `bold`, `italic`, or a raw `style` escape hatch
+for any XMind topic property. These are real per-topic formatting written into the
+document (patched into `content.json` after generation, since the SDK has no topic
+setter), so they survive editing in XMind. The one caveat: embedded images and node
+styling live only in the `.xmind` — the static `.svg`/`.png` renders don't carry
+them.
 
 ## The topic tree
 
@@ -61,11 +76,13 @@ it picks multi when there's more than one top-level branch.
 
 ## It's working if
 
-- The run prints node/sheet counts and paths, and a `.xmind` you can open in XMind
-  appears — with, in multi-sheet mode, clickable Overview → branch links and
-  working back-links.
-- Alongside it sit a `.mmd` and `.md` twin, and `render.sh` turns the `.mmd` into
-  `.svg` / `.png` / `.pdf` without downloading a browser.
+- The run prints node/sheet counts, the `styled` / `images` counters, and paths,
+  and a `.xmind` you can open in XMind appears — with, in multi-sheet mode,
+  clickable Overview → branch links and working back-links, and any embedded
+  screenshots showing on their nodes.
+- Alongside it sit a `.mmd` and `.md` twin; `render.sh` turns the `.mmd` into
+  `.svg` / `.png` / `.pdf` without downloading a browser, and `html` builds an
+  interactive, collapsible markmap that stays legible on large maps.
 
 ## Where it fits
 

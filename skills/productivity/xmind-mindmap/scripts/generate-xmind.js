@@ -32,7 +32,11 @@ const { Theme } = require(require.resolve('xmind/dist/core/theme'));
 
 // ---------- args ----------
 function parseArgs(argv) {
-  const args = { theme: 'snowbrush', layout: 'auto', out: '.', companions: true };
+  // NB: do not pre-default `theme`/`layout` here — a truthy default would shadow
+  // the tree's own `theme`/`layout` in the `args.x || meta.x || fallback` chains
+  // below (silently ignoring root-level tree settings). The fallbacks there
+  // supply the defaults instead, so a CLI flag still wins over the tree.
+  const args = { out: '.', companions: true };
   for (let i = 0; i < argv.length; i++) {
     const a = argv[i];
     const next = () => argv[++i];
@@ -84,13 +88,88 @@ function countNodes(node) {
 }
 
 // ---------- xmind building ----------
+// A node may carry a `url` (alias `href`/`link`) → attach it as a topic hyperlink.
+function nodeUrl(node) {
+  const u = node.url || node.href || node.link;
+  return (typeof u === 'string' && u.trim()) ? u.trim() : null;
+}
+
+// ----- per-node styling -----
+// The high-level SDK exposes no style setter, so styles are collected here keyed
+// by the topic's uuid and patched into content.json after save (see applyStyles).
+// "Terminal" look for CLI-command nodes: black fill, green monospace text.
+const TERMINAL_STYLE = {
+  'svg:fill': '#000000',
+  'fo:color': '#33FF33',
+  'fo:font-family': 'Menlo',
+};
+
+// Map a node's convenience flags (cli/bold/italic) + raw `style` override to a
+// flat XMind style-properties object, or null when the node needs no styling.
+function styleFor(node) {
+  let p = null;
+  if (node.cli) p = Object.assign({}, TERMINAL_STYLE);
+  if (node.bold) { p = p || {}; p['fo:font-weight'] = 'bold'; }
+  if (node.italic) { p = p || {}; p['fo:font-style'] = 'italic'; }
+  if (node.style && typeof node.style === 'object' && !Array.isArray(node.style)) {
+    p = p || {}; Object.assign(p, node.style);   // explicit override wins
+  }
+  return p && Object.keys(p).length ? p : null;
+}
+
+// Decorate a title for the Markdown outline twin so cli/bold/italic survive there too.
+function decorateLabel(node) {
+  let t = String(node.title);
+  if (node.cli) t = '`' + t + '`';
+  if (node.bold) t = '**' + t + '**';
+  if (node.italic) t = '*' + t + '*';
+  return t;
+}
+
+// ----- per-node images -----
+// A node may carry `image: "path.png"` → embedded on the topic. The path is
+// pre-resolved to an absolute path against the tree-file dir (see resolveImages).
+function nodeImage(node) {
+  return (typeof node.__imageAbs === 'string' && node.__imageAbs) ? node.__imageAbs : null;
+}
+
+// Combined per-node patch (style and/or image), collected by uuid and applied to
+// content.json after save. Returns null when the node needs neither.
+function patchFor(node) {
+  const style = styleFor(node);
+  const image = nodeImage(node);
+  if (!style && !image) return null;
+  const p = {};
+  if (style) p.style = style;
+  if (image) p.image = image;
+  return p;
+}
+
+// Walk the tree and resolve every `image` to an absolute path against baseDir,
+// stashing it on `__imageAbs`. Warns (and drops) images that don't exist.
+function resolveImages(node, baseDir) {
+  if (node && typeof node.image === 'string' && node.image.trim()) {
+    const abs = path.resolve(baseDir, node.image.trim());
+    if (fs.existsSync(abs)) node.__imageAbs = abs;
+    else console.warn(`WARN: image not found, skipping: ${node.image}`);
+  }
+  for (const c of node.children || []) resolveImages(c, baseDir);
+}
+
 // Attach `children` under a Topic. parentUUID null → attach to the sheet root.
-function addChildren(topic, parentUUID, children) {
+// `sheet` is needed to resolve the raw topic component when a node has a url.
+function addChildren(topic, parentUUID, children, sheet, patchById) {
   for (const child of children || []) {
     if (parentUUID) topic.on(parentUUID); else topic.on();
     topic.add({ title: String(child.title) });
     const uuid = topic.cid();
-    if (child.children && child.children.length) addChildren(topic, uuid, child.children);
+    const url = nodeUrl(child);
+    if (url && sheet) {
+      const comp = sheet.findComponentById(uuid);
+      if (comp && comp.addHref) comp.addHref(url);
+    }
+    if (patchById) { const p = patchFor(child); if (p) patchById[uuid] = p; }
+    if (child.children && child.children.length) addChildren(topic, uuid, child.children, sheet, patchById);
   }
 }
 
@@ -107,9 +186,10 @@ function buildSingleSheet(root, themeName) {
   const sheetId = created[0].id;
   const sheet = wb.getSheet(sheetId);
   const topic = new Topic({ sheet });
-  addChildren(topic, null, root.children);
+  const patchById = {};
+  addChildren(topic, null, root.children, sheet, patchById);
   applyTheme(wb, sheetId, themeName);
-  return wb;
+  return { wb, patchById };
 }
 
 function buildMultiSheet(root, themeName) {
@@ -134,6 +214,9 @@ function buildMultiSheet(root, themeName) {
     branchTopicId[i] = wb.getSheet(sid).getRootTopic().getId();
   });
 
+  // Per-node patches (style + image) collected across all sheets, applied later.
+  const patchById = {};
+
   // Overview: one child per branch, hyperlinked to that branch's sub-sheet root.
   const overviewTopic = new Topic({ sheet: overviewSheet });
   root.children.forEach((branch, i) => {
@@ -141,6 +224,7 @@ function buildMultiSheet(root, themeName) {
     const uuid = overviewTopic.cid();
     const comp = overviewSheet.findComponentById(uuid);
     if (comp && comp.addHref) comp.addHref('xmind:#' + branchTopicId[i]);
+    const p = patchFor(branch); if (p) patchById[uuid] = p;
   });
 
   // Sub-sheets: back-link the root to Overview, then attach the full subtree.
@@ -148,9 +232,11 @@ function buildMultiSheet(root, themeName) {
   root.children.forEach((branch, i) => {
     const sid = sheetIds[branch.title] || sheetIds['#' + (i + 1)];
     const sheet = wb.getSheet(sid);
+    const rootId = sheet.getRootTopic().getId();
     sheet.getRootTopic().addHref('xmind:#' + overviewRootId);
+    const p = patchFor(branch); if (p) patchById[rootId] = p;   // patch the detail-sheet centre too
     const topic = new Topic({ sheet });
-    addChildren(topic, null, branch.children || []);
+    addChildren(topic, null, branch.children || [], sheet, patchById);
   });
 
   // Theme every sheet.
@@ -160,7 +246,7 @@ function buildMultiSheet(root, themeName) {
     applyTheme(wb, sid, themeName);
   });
 
-  return wb;
+  return { wb, patchById };
 }
 
 // ---------- companions ----------
@@ -185,12 +271,84 @@ function toMarkdownOutline(root) {
   const lines = ['# ' + String(root.title), ''];
   const walk = (nodes, depth) => {
     for (const n of nodes || []) {
-      lines.push('  '.repeat(depth) + '- ' + String(n.title));
+      const url = nodeUrl(n);
+      const text = decorateLabel(n);
+      const label = url ? `[${text}](${url})` : text;
+      lines.push('  '.repeat(depth) + '- ' + label);
       if (n.children && n.children.length) walk(n.children, depth + 1);
     }
   };
   walk(root.children, 0);
   return lines.join('\n') + '\n';
+}
+
+// ---------- style + image patching ----------
+// Read a PNG's pixel dimensions from its IHDR (width @16, height @20, big-endian).
+function pngSize(buf) {
+  if (buf.length >= 24 && buf.toString('ascii', 1, 4) === 'PNG') {
+    return { w: buf.readUInt32BE(16), h: buf.readUInt32BE(20) };
+  }
+  return { w: 0, h: 0 };
+}
+
+// The SDK has no per-topic style/image setter, so after the .xmind (a ZIP) is
+// written we open it and merge collected style properties + embed images into
+// each topic by id. Images are added under resources/ and referenced as
+// xap:resources/… (XMind's scheme), with a manifest entry. Uses jszip (a dep of `xmind`).
+async function applyPatches(xmindPath, patchById) {
+  const JSZip = require('jszip');
+  const zip = await JSZip.loadAsync(fs.readFileSync(xmindPath));
+  const cEntry = zip.file('content.json');
+  if (!cEntry) throw new Error('content.json not found inside the .xmind');
+  const content = JSON.parse(await cEntry.async('string'));
+
+  let manifest = { 'file-entries': {} };
+  const mEntry = zip.file('manifest.json');
+  if (mEntry) { try { manifest = JSON.parse(await mEntry.async('string')); } catch (e) { /* keep default */ } }
+  manifest['file-entries'] = manifest['file-entries'] || {};
+
+  const MAX_DISPLAY_W = 220;      // cap on-node image width so the map stays navigable
+  const fileToRes = {};           // abs image path -> { res, buf } (dedupe shared images)
+  let resSeq = 0, styled = 0, imaged = 0;
+
+  const embedImage = (absPath) => {
+    if (fileToRes[absPath]) return fileToRes[absPath];
+    const buf = fs.readFileSync(absPath);
+    const res = `resources/img-${++resSeq}.png`;
+    zip.file(res, buf);
+    manifest['file-entries'][res] = { 'media-type': 'image/png' };
+    fileToRes[absPath] = { res, buf };
+    return fileToRes[absPath];
+  };
+
+  const walk = (t) => {
+    if (!t) return;
+    const patch = t.id && patchById[t.id];
+    if (patch) {
+      if (patch.style) {
+        t.style = t.style || {};
+        t.style.properties = Object.assign({}, t.style.properties || {}, patch.style);
+        styled++;
+      }
+      if (patch.image) {
+        const { res, buf } = embedImage(patch.image);
+        const { w, h } = pngSize(buf);
+        const dispW = w ? Math.min(w, MAX_DISPLAY_W) : MAX_DISPLAY_W;
+        const dispH = w ? Math.round(h * dispW / w) : MAX_DISPLAY_W;
+        t.image = { src: 'xap:' + res, width: dispW, height: dispH };
+        imaged++;
+      }
+    }
+    const attached = t.children && t.children.attached;
+    if (Array.isArray(attached)) attached.forEach(walk);
+  };
+  (Array.isArray(content) ? content : [content]).forEach((sheet) => walk(sheet.rootTopic));
+
+  zip.file('content.json', JSON.stringify(content));
+  zip.file('manifest.json', JSON.stringify(manifest));
+  const out = await zip.generateAsync({ type: 'nodebuffer', compression: 'DEFLATE' });
+  fs.writeFileSync(xmindPath, out);
+  return { styled, imaged };
 }
 
 // ---------- main ----------
@@ -203,6 +361,9 @@ async function main() {
 
   const raw = JSON.parse(fs.readFileSync(args.tree, 'utf8'));
   const { root, meta } = normalizeTree(raw, args.title);
+
+  // Resolve any node `image` paths (relative to the tree file) to absolute paths.
+  resolveImages(root, path.dirname(path.resolve(args.tree)));
 
   const themeName = args.theme || meta.theme || 'snowbrush';
   const allowed = ['snowbrush', 'robust', 'business'];
@@ -217,8 +378,8 @@ async function main() {
   }
 
   const total = countNodes(root);
-  const wb = layout === 'multi' ? buildMultiSheet(root, themeName)
-                                : buildSingleSheet(root, themeName);
+  const { wb, patchById } = layout === 'multi' ? buildMultiSheet(root, themeName)
+                                              : buildSingleSheet(root, themeName);
 
   const outDir = path.resolve(args.out);
   fs.mkdirSync(outDir, { recursive: true });
@@ -229,8 +390,13 @@ async function main() {
   if (!ok) throw new Error('Zipper.save() returned false — the .xmind was not written.');
 
   const xmindPath = path.join(outDir, base + '.xmind');
+
+  // Patch per-node styles (cli/bold/italic/style) + embed images into the saved .xmind.
+  let styled = 0, imaged = 0;
+  if (Object.keys(patchById).length) ({ styled, imaged } = await applyPatches(xmindPath, patchById));
+
   const sheetCount = layout === 'multi' ? root.children.length + 1 : 1;
-  console.log(`nodes: ${total}  sheets: ${sheetCount}  layout: ${layout}  theme: ${themeName}`);
+  console.log(`nodes: ${total}  sheets: ${sheetCount}  layout: ${layout}  theme: ${themeName}  styled: ${styled}  images: ${imaged}`);
   console.log('xmind: ' + xmindPath);
 
   if (args.companions) {

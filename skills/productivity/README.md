@@ -17,4 +17,4 @@ Reachable only when you type them (`disable-model-invocation: true`).
 Model- or user-reachable (rich trigger phrasing so the model can reach for them).
 
 - **[grilling](./grilling/SKILL.md)** — Interview the user relentlessly about a plan or design until every branch of the decision tree is resolved.
-- **[xmind-mindmap](./xmind-mindmap/SKILL.md)** — Turn any topic into a real `.xmind` mind map from a hierarchical topic tree, with optional SVG/PNG/PDF renders.
+- **[xmind-mindmap](./xmind-mindmap/SKILL.md)** — Turn any topic into a real `.xmind` mind map from a hierarchical topic tree (with optional per-node screenshots, clickable links, and styling), with optional SVG/PNG/PDF or interactive-HTML renders.
