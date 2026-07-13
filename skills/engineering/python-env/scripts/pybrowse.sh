@@ -189,8 +189,18 @@ def cmd_files(name):
         d = _dist(name)
     except Exception:
         return
+    try:
+        base = os.path.realpath(str(d.locate_file("")))
+    except Exception:
+        base = ""
     for f in _pyfiles(d):
-        print(f)
+        rf = os.path.realpath(f)
+        # Show only the package-relative path (macholib/dyld.py); keep the
+        # absolute path in a second, tab-separated field for preview + editor.
+        disp = os.path.relpath(rf, base) if base else os.path.basename(rf)
+        if disp.startswith(".."):
+            disp = os.path.basename(rf)
+        print(f"{disp}\t{rf}")
 
 def cmd_url(name):
     try:
@@ -301,13 +311,15 @@ _pybrowse_files() {
     --reverse \
     --border \
     --padding 1,2 \
+    --delimiter='\t' \
+    --with-nth=1 \
     --border-label="🐍 $pkg — source" \
     --list-label="$pkg .py files" \
     --preview-label='source' \
-    --preview "$batcmd {} 2>/dev/null | head -400" \
+    --preview "$batcmd {2} 2>/dev/null | head -400" \
     --preview-window='right,70%' \
-    --bind "enter:execute(\${EDITOR:-vim} {})" \
-    --bind 'focus:transform-header:echo {}' \
+    --bind "enter:execute(\${EDITOR:-vim} {2})" \
+    --bind 'focus:transform-header:echo {2}' \
     --footer='ENTER edit in $EDITOR, ESC back to packages'
 }
 
