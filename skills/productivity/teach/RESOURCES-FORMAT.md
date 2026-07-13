@@ -26,6 +26,7 @@
 
 - **High-trust only.** Prefer primary sources, recognised experts, peer-reviewed work, and communities with strong moderation. If a resource is marketing dressed as education, leave it out.
 - **Annotate every entry.** A bare link is useless in three months. Add one line: what it covers and when to reach for it.
+- **Verify every link before it goes in.** Fetch each URL and confirm it resolves to the intended content — a candidate from memory or a search result is not a fact. A `200` that redirects a real path down to the site root is a **dead link**, not a live one; check the final URL, not just the status. Run `bash verify-urls.sh` after editing links; a URL you can't verify goes under `## Gaps`, not into the list. (See SKILL.md → _Philosophy_.)
 - **Group by Knowledge / Wisdom.** Mirrors the philosophy in [SKILL.md](./SKILL.md). It is fine for a resource to appear in only one group.
 - **Surface gaps explicitly.** If no good resource exists for an area the mission needs, write a `## Gaps` section listing what is missing. This drives future search.
 - **Prune ruthlessly.** A resource that turned out to be wrong, shallow, or off-mission should be removed, not buried. Better five sharp sources than thirty mediocre ones.

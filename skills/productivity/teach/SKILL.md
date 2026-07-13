@@ -31,6 +31,8 @@ To learn at a deep level, the user needs three things:
 
 Before the `RESOURCES.md` is well-populated, your focus should be to find high-quality resources which will help the user acquire knowledge. Never trust your parametric knowledge.
 
+**Verify every URL before you write it (hard rule).** A URL from your memory, a search snippet, or a doc-search tool is a _candidate_, not a fact — and lessons are "littered with citations," so a wrong link is easy to ship. Never put a link into `RESOURCES.md`, a lesson, a reference card, or `index.html` until you have fetched it and confirmed it resolves to the intended content. **A `200` is not enough**: many sites `301` a moved or missing page to their home page, which then 200s — a link that redirects a real path down to the site root (`/`) is a **dead link wearing a live badge**. Check the _final, redirected_ URL, not just the status. Use the shipped **`verify-urls.sh`** (in `./assets/`, copied to the workspace root next to `build-docs.sh`): it fetches every URL in the workspace and fails on dead links and silent redirect-to-root, so run `bash verify-urls.sh` after adding or editing links. A URL you can't verify goes under `RESOURCES.md`'s `## Gaps`, never into a lesson.
+
 Some topics may require more skills than knowledge. Learning more about theoretical physics might be more knowledge-based. For yoga, more skills-based.
 
 ### Fluency vs Storage Strength
@@ -76,12 +78,14 @@ A shared stylesheet is the first component every workspace earns: every lesson l
 - `quiz.js` — the retrieval-practice quiz widget (immediate feedback, running score).
 - `doc.js` — sidebar outline + client-side search for long rendered pages (auto-builds a TOC from headings and glossary terms; `/` focuses search).
 - `build-docs.sh` — renders the Markdown docs to styled HTML (belongs at the **workspace root**, not `assets/`).
+- `verify-urls.sh` — checks every linked URL in the workspace actually resolves, flagging dead links and silent redirect-to-root (belongs at the **workspace root**, next to `build-docs.sh`). See the URL-verification rule under [Philosophy](#philosophy).
 
 ## Rendered docs, the course home & navigation
 
 Lessons and reference documents are authored as HTML, but the workspace's **Markdown docs** (`MISSION.md`, `GLOSSARY.md`, `RESOURCES.md`, `NOTES.md`, and `learning-records/*.md`) are the editable source of truth — and clicking raw Markdown in a browser is jarring. So render each to a **styled `.html` twin**:
 
 - Use `build-docs.sh` (pandoc + `lesson.css`) to generate the twins. The `.md` stays the source the user edits and you write; **re-run `bash build-docs.sh` after editing any `.md`** so the HTML never drifts. Record this workflow in `NOTES.md`. Never hand-edit the generated `.html`.
+- After adding or changing any links, **run `bash verify-urls.sh` before calling the docs done** — it fetches every URL in the workspace and fails on dead links or silent redirect-to-root (see the URL-verification rule under [Philosophy](#philosophy)). Copy it to the workspace root at scaffold time alongside `build-docs.sh`.
 - The glossary render splits each `**Term**: definition` paragraph into a prominent term line + its definition, so it reads as a spaced list. **Group glossary terms under `##` subheadings by topic/lesson** — the subheadings become sections in the sidebar outline, turning the glossary into a mini course-map.
 
 Maintain an **`index.html` at the workspace root — the course home**. It's the learner's dashboard and their way back in if a tab or session is lost. It indexes every lesson, reference card, hands-on probe, and workspace doc, and shows **per-lesson completion status**. Keep it current as the course grows; open it for the user when they want an overview.
