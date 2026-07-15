@@ -1,0 +1,13 @@
+{
+  "extraKnownMarketplaces": {
+    "grymmjack-skills": {
+      "source": {
+        "source": "github",
+        "repo": "grymmjack/matt-pocock-skills"
+      }
+    }
+  },
+  "enabledPlugins": {
+    "mattpocock-skills@grymmjack-skills": true
+  }
+}

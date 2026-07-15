@@ -1,0 +1,16 @@
+{
+  "name": "grymmjack-skills",
+  "owner": {
+    "name": "grymmjack"
+  },
+  "metadata": {
+    "description": "grymmjack's fork of Matt Pocock's engineering + productivity skills."
+  },
+  "plugins": [
+    {
+      "name": "mattpocock-skills",
+      "source": "./",
+      "description": "Matt Pocock's daily engineering and productivity skills (24 promoted skills)."
+    }
+  ]
+}
